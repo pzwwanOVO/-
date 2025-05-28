@@ -141,11 +141,11 @@
 </head>
 <body>
     <div id="startScreen">
-        <img src="blob:https://github.com/d9a7ab76-a06e-4ee1-97c6-e503fcbde29e" alt="老人图片" style="width: 200px; height: 200px; margin-bottom: 20px; object-fit: cover;">
+        <img src="IMG_20250528_110606.png" alt="老人图片" style="width: 200px; height: 200px; margin-bottom: 20px; object-fit: cover;">
         <button id="startButton">逮捕老人</button>
     </div>
     <div id="task">
-        <img src="blob:https://github.com/d9a7ab76-a06e-4ee1-97c6-e503fcbde29e" alt="老人图片" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+        <img src="IMG_20250528_110606.png" alt="老人图片" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
     </div>
     <div id="buttonContainer">
         <button id="resetButton" style="display: none;">再次出击</button>
@@ -221,10 +221,7 @@
                 task.style.top = `${newTop}px`;
                 task.classList.add('hovered');
                 
-                // 播放音效
-                avoidSound.currentTime = 0;
-                avoidSound.play();
-                
+              
                 // 显示嘲讽文字
                 if (!tauntPopup) {
                     tauntPopup = document.createElement('div');
