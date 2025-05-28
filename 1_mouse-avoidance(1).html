@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鼠标躲避效果</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        #task {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-color: white;
+            border-radius: 10px;
+            transition: all 0.1s ease;
+        }
+
+        #buttonContainer {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+
+        #resetButton {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #resetButton:hover {
+            background-color: #45a049;
+        }
+
+        #moneyButton {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #moneyButton:hover {
+            background-color: #45a049;
+        }
+
+        #startScreen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            padding: 30px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #startButton {
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #startButton:hover {
+            background-color: #45a049;
+        }
+
+        #task.hovered {
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .taunt-popup {
+            position: absolute;
+            left: calc(var(--task-left) + var(--task-width) + 10px);
+            top: var(--task-top);
+            padding: 10px;
+            background-color: yellow;
+            border: 1px solid black;
+            border-radius: 5px;
+            z-index: 1000;
+            animation: fadeInOut 2s infinite;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        #moneyImage {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 80%;
+            max-height: 80%;
+            z-index: 3000;
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <img src="老人.png" alt="老人图片" style="width: 200px; height: 200px; margin-bottom: 20px; object-fit: cover;">
+        <button id="startButton">逮捕老人</button>
+    </div>
+    <div id="task">
+        <img src="老人.png" alt="老人图片" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px;">
+    </div>
+    <div id="buttonContainer">
+        <button id="resetButton" style="display: none;">再次出击</button>
+        <button id="moneyButton" style="display: none;">打钱</button>
+    </div>
+    <img id="moneyImage" src="打钱.jpg" alt="打钱图片">
+    <audio id="avoidSound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+    <script>
+        const task = document.getElementById('task');
+        const taskRect = task.getBoundingClientRect();
+        const avoidDistance = Math.sqrt(taskRect.width * taskRect.width + taskRect.height * taskRect.height) / 2 + 50; // 触发躲避的距离，增加 50px 缓冲
+        const moveDistance = 200;   // 躲避移动的距离
+
+        const img = document.querySelector('#task img');
+        let tauntPopup = null;
+        let isImageClicked = false;
+        
+        // 定义嘲讽文字数组
+        const taunts = ['抓不到我吧~', '你是人机吗？', '嘿嘿嘿'];
+        
+        img.addEventListener('click', () => {
+            if (!isImageClicked) {
+                const popup = document.createElement('div');
+                popup.style.position = 'fixed';
+                popup.style.top = '50%';
+                popup.style.left = '50%';
+                popup.style.transform = 'translate(-50%, -50%)';
+                popup.style.padding = '20px';
+                popup.style.backgroundColor = 'white';
+                popup.style.border = '2px solid black';
+                popup.style.borderRadius = '10px';
+                popup.style.zIndex = '1000';
+                popup.textContent = '成功逮捕老人';
+                document.body.appendChild(popup);
+                
+                // 显示重置按钮和打钱按钮
+                resetButton.style.display = 'block';
+                moneyButton.style.display = 'block';
+                isImageClicked = true;
+                
+                // 移除嘲讽文字
+                if (tauntPopup) {
+                    tauntPopup.remove();
+                    tauntPopup = null;
+                }
+            }
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isImageClicked) return;
+            
+            const taskRect = task.getBoundingClientRect();
+            const taskCenterX = taskRect.left + taskRect.width / 2;
+            const taskCenterY = taskRect.top + taskRect.height / 2;
+            
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            
+            const dx = mouseX - taskCenterX;
+            const dy = mouseY - taskCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < avoidDistance) {
+                const angle = Math.atan2(dy, dx);
+                const newX = taskCenterX - moveDistance * Math.cos(angle);
+                const newY = taskCenterY - moveDistance * Math.sin(angle);
+
+                // 限制元素在视口内
+                const newLeft = Math.max(0, Math.min(window.innerWidth - taskRect.width, newX - taskRect.width / 2));
+                const newTop = Math.max(0, Math.min(window.innerHeight - taskRect.height, newY - taskRect.height / 2));
+
+                task.style.left = `${newLeft}px`;
+                task.style.top = `${newTop}px`;
+                task.classList.add('hovered');
+                
+                // 播放音效
+                avoidSound.currentTime = 0;
+                avoidSound.play();
+                
+                // 显示嘲讽文字
+                if (!tauntPopup) {
+                    tauntPopup = document.createElement('div');
+                    tauntPopup.className = 'taunt-popup';
+                    tauntPopup.style.position = 'absolute';
+                    tauntPopup.style.left = `${taskRect.left + taskRect.width + 10}px`;
+                    tauntPopup.style.top = `${taskRect.top}px`;
+                    tauntPopup.style.padding = '10px';
+                    tauntPopup.style.backgroundColor = 'yellow';
+                    tauntPopup.style.border = '1px solid black';
+                    tauntPopup.style.borderRadius = '5px';
+                    tauntPopup.style.zIndex = '1000';
+                    // 随机选择嘲讽文字
+                    tauntPopup.textContent = taunts[Math.floor(Math.random() * taunts.length)];
+                    document.body.appendChild(tauntPopup);
+                }
+            } else {
+                // 隐藏嘲讽文字
+                if (tauntPopup) {
+                    tauntPopup.remove();
+                    tauntPopup = null;
+                }
+            }
+        });
+        
+        const resetButton = document.getElementById('resetButton');
+        const moneyButton = document.getElementById('moneyButton');
+        const moneyImage = document.getElementById('moneyImage');
+        const startScreen = document.getElementById('startScreen');
+        const startButton = document.getElementById('startButton');
+        
+        startButton.addEventListener('click', () => {
+            startScreen.style.display = 'none';
+        });
+        
+        function resetGame() {
+            // 重置任务元素位置到初始位置
+            task.style.left = '0px';
+            task.style.top = '0px';
+            
+            // 重置点击状态
+            isImageClicked = false;
+            
+            // 移除所有弹出提示
+            const popups = document.querySelectorAll('div[style*="position: fixed"]');
+            popups.forEach(popup => {
+                popup.remove();
+            });
+            
+            // 隐藏重置按钮
+            resetButton.style.display = 'none';
+            // 暂停音效
+            avoidSound.pause();
+            avoidSound.currentTime = 0;
+        }
+
+        resetButton.addEventListener('click', resetGame);
+        moneyButton.addEventListener('click', () => {
+            moneyImage.style.display = 'block';
+        });
+
+        startButton.addEventListener('click', () => {
+            startScreen.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
